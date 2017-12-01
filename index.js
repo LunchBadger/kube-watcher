@@ -18,7 +18,9 @@ pods$.subscribe(obj => {
   data[user][envType][instanceType] = data[user][envType][instanceType] || {};
   if (obj.type === 'ADDED') {
     data[user][envType][instanceType][obj.object.metadata.name] = {
-      status: obj.object.status
+      status: {
+        running: obj.object.status.phase === 'Running'
+      }
     };
   } else {
     delete data[user][envType][instanceType][obj.object.metadata.name];
