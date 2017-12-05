@@ -1,0 +1,42 @@
+{
+  "name": "kube-watcher",
+  "version": "1.0.0",
+  "description": "Watch Kube pods and notify clients using SSE",
+  "main": "index.js",
+  "dependencies": {
+    "kube-observable": "^0.1.0",
+    "sse-channel": "^2.0.6"
+  },
+  "devDependencies": {
+    "eslint": "^3.19.0",
+    "eslint-config-standard": "10.2.1",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-markdown": "1.0.0-beta.6",
+    "eslint-plugin-node": "4.2.2",
+    "eslint-plugin-promise": "^3.6.0",
+    "eslint-plugin-standard": "3.0.1",
+    "lint-staged": "^5.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "precommit": "lint-staged",
+    "lint": "eslint . --fix",
+    "start": "node ."
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint . --fix",
+      "git add"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevinswiber/kube-pod-watcher.git"
+  },
+  "author": "Kevin Swiber <kswiber@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kevinswiber/kube-pod-watcher/issues"
+  },
+  "homepage": "https://github.com/kevinswiber/kube-pod-watcher#readme"
+}
