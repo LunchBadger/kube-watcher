@@ -1,0 +1,53 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kube-watcher
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        run: kube-watcher
+    spec:
+      containers:
+        - name: kube-watcher
+          image: 410240865662.dkr.ecr.us-west-2.amazonaws.com/kube-watcher:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 7788
+        - name: kubectl-proxy
+          image: 410240865662.dkr.ecr.us-west-2.amazonaws.com/kubectl:1.4.6
+          imagePullPolicy: Always
+          args: [proxy, --port, "8001", --logtostderr]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-watcher
+  labels:
+    run: kube-watcher
+spec:
+  ports:
+    - port: 80
+      targetPort: 7788
+      protocol: TCP
+  selector:
+    run: kube-watcher
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kube-watcher
+spec:
+  rules:
+  - host: kube-watcher.lunchbadger.io
+    http:
+      paths:
+      - backend:
+          serviceName: kube-watcher
+          servicePort: 80
+
