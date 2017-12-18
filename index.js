@@ -44,6 +44,7 @@ setInterval(() => {
 http.createServer(function (req, res) {
   // Note that you can add any client to an SSE channel, regardless of path.
   // Only requirement is not having written data to the response stream yet
+  console.log('requested '+ req.url);
   if (req.url.indexOf('/channels/') === 0) {
     const key = req.url.replace('/channels/', '');
     if (channels[key]) {
@@ -56,7 +57,7 @@ http.createServer(function (req, res) {
     res.writeHead(404);
     res.end();
   }
-}).listen(7788, '127.0.0.1', function () {
+}).listen(7788, '0.0.0.0', function () {
   // eslint-disable-next-line
   console.log('Access SSE stream at http://127.0.0.1:7788/channels/{username}');
 });
