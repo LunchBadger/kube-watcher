@@ -15,7 +15,7 @@ pods$.subscribe(obj => {
   data[user] = data[user] || {};
   channels[user] = channels[user] || new SseChannel({cors: {
     origins: ['*'],
-    headers: ['Cache-Control', 'Accept', 'Authorization']
+    headers: ['Cache-Control', 'Accept', 'Authorization', 'Accept-Encoding', 'Access-Control-Request-Headers', 'User-Agent', 'Access-Control-Request-Method', 'Pragma', 'Connection', 'Host']
   }});
   data[user][envType] = data[user][envType] || {};
   data[user][envType][instanceType] = data[user][envType][instanceType] || {};
