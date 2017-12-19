@@ -13,7 +13,10 @@ pods$.subscribe(obj => {
 
   const [instanceType, user, envType] = parts;
   data[user] = data[user] || {};
-  channels[user] = channels[user] || new SseChannel();
+  channels[user] = channels[user] || new SseChannel({cors: {
+    origins: ['*'],
+    headers: ['Cache-Control', 'Accept', 'Authorization']
+  }});
   data[user][envType] = data[user][envType] || {};
   data[user][envType][instanceType] = data[user][envType][instanceType] || {};
   if (obj.type === 'ADDED') {
@@ -45,9 +48,6 @@ http.createServer(function (req, res) {
   // Note that you can add any client to an SSE channel, regardless of path.
   // Only requirement is not having written data to the response stream yet
   console.log('requested', req.url);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Expose-Headers', '*');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
