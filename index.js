@@ -44,7 +44,16 @@ setInterval(() => {
 http.createServer(function (req, res) {
   // Note that you can add any client to an SSE channel, regardless of path.
   // Only requirement is not having written data to the response stream yet
-  console.log('requested '+ req.url);
+  console.log('requested', req.url);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Expose-Headers', '*');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    return res.end();
+  }
+
   if (req.url.indexOf('/channels/') === 0) {
     const key = req.url.replace('/channels/', '');
     if (channels[key]) {
