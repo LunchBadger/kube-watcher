@@ -49,10 +49,10 @@ http.createServer(function (req, res) {
   // Only requirement is not having written data to the response stream yet
   console.log('requested', req.url);
 
-  if (req.method === 'OPTIONS') {
-    res.writeHead(200);
-    return res.end();
-  }
+  // if (req.method === 'OPTIONS') {
+  //   res.writeHead(200);
+  //   return res.end();
+  // }
 
   if (req.url.indexOf('/channels/') === 0) {
     const key = req.url.replace('/channels/', '');
