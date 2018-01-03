@@ -31,7 +31,7 @@ pods$.subscribe(obj => {
       if (kubeStatus.conditions) {
         status.pod = {};
         kubeStatus.conditions.forEach(c => {
-          status.pod[c.type] = c.status === 'True';
+          status.pod[c.type.toLowerCase()] = c.status === 'True';
         });
       }
       if (kubeStatus.containerStatuses) {
