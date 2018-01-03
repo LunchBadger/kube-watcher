@@ -5,6 +5,9 @@ metadata:
 spec:
   replicas: 1
   revisionHistoryLimit: 1
+  selector:
+  matchLabels:
+    run: kube-watcher
   strategy:
     type: Recreate
   template:
@@ -12,6 +15,7 @@ spec:
       labels:
         run: kube-watcher
     spec:
+      serviceAccountName: kube-watcher-kubectl-proxy
       containers:
         - name: kube-watcher
           image: 410240865662.dkr.ecr.us-west-2.amazonaws.com/kube-watcher:latest
