@@ -21,13 +21,30 @@ pods$.subscribe(obj => {
     });
     data[user][envType] = data[user][envType] || {};
     data[user][envType][instanceType] = data[user][envType][instanceType] || {};
+    const kubeStatus = obj.object.status;
     if (obj.type === 'ADDED') {
-      data[user][envType][instanceType][obj.object.metadata.name] = {
-        status: {
-          running: obj.object.status.phase === 'Running',
-          stopped: obj.object.status.phase === 'Completed'
-        }
+      const status = {
+        running: kubeStatus.phase === 'Running',
+        stopped: kubeStatus.phase === 'Completed'
       };
+
+      if (kubeStatus.conditions) {
+        status.pod = {};
+        kubeStatus.conditions.forEach(c => {
+          status.pod[c.type] = c.status === 'True';
+        });
+      }
+      if (kubeStatus.containerStatuses) {
+        status.containers = {};
+        kubeStatus.containerStatuses.forEach(cs => {
+          status.containers[cs.name] = {
+            ready: cs.ready,
+            restartCount: cs.restartCount,
+            state: cs.state
+          };
+        });
+      }
+      data[user][envType][instanceType][obj.object.metadata.name] = { status };
     } else {
       delete data[user][envType][instanceType][obj.object.metadata.name];
     }
