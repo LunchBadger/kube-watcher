@@ -22,10 +22,11 @@ pods$.subscribe(obj => {
     data[user][envType] = data[user][envType] || {};
     data[user][envType][instanceType] = data[user][envType][instanceType] || {};
     const kubeStatus = obj.object.status;
-    if (obj.type === 'ADDED') {
+    if (obj.type === 'ADDED' || obj.type === 'MODIFIED') {
       const status = {
         running: kubeStatus.phase === 'Running',
-        stopped: kubeStatus.phase === 'Completed'
+        stopped: kubeStatus.phase === 'Completed' || kubeStatus.phase === 'Succeeded',
+        failed: kubeStatus.phase === 'Failed'
       };
 
       if (kubeStatus.conditions) {
