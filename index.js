@@ -4,26 +4,55 @@ const PODS_URL = process.env.PODS_URL || 'http://localhost:8001' +
 
 const data = {};
 const channels = {};
-
 const pods$ = require('kube-observable')(PODS_URL);
 pods$.subscribe(obj => {
   // gateway-demo-dev-gateway-696bb497cd-s7b6p
-  const parts = obj.object.metadata.name.split('-');
-  if (parts.length < 4) { return; }
+  try {
+    const parts = obj.object.metadata.name.split('-');
+    if (parts.length < 4) { return; }
 
-  const [instanceType, user, envType] = parts;
-  data[user] = data[user] || {};
-  channels[user] = channels[user] || new SseChannel();
-  data[user][envType] = data[user][envType] || {};
-  data[user][envType][instanceType] = data[user][envType][instanceType] || {};
-  if (obj.type === 'ADDED') {
-    data[user][envType][instanceType][obj.object.metadata.name] = {
-      status: {
-        running: obj.object.status.phase === 'Running'
+    const [instanceType, user, envType] = parts;
+    data[user] = data[user] || {};
+    channels[user] = channels[user] || new SseChannel({
+      cors: {
+        origins: ['*'],
+        headers: ['Cache-Control', 'Accept', 'Authorization', 'Accept-Encoding', 'Access-Control-Request-Headers', 'User-Agent', 'Access-Control-Request-Method', 'Pragma', 'Connection', 'Host']
       }
-    };
-  } else {
-    delete data[user][envType][instanceType][obj.object.metadata.name];
+    });
+    data[user][envType] = data[user][envType] || {};
+    data[user][envType][instanceType] = data[user][envType][instanceType] || {};
+    const kubeStatus = obj.object.status;
+    if (obj.type === 'ADDED' || obj.type === 'MODIFIED') {
+      const status = {
+        running: kubeStatus.phase === 'Running',
+        stopped: kubeStatus.phase === 'Completed' || kubeStatus.phase === 'Succeeded',
+        failed: kubeStatus.phase === 'Failed'
+      };
+
+      if (kubeStatus.conditions) {
+        status.pod = {};
+        kubeStatus.conditions.forEach(c => {
+          status.pod[c.type.toLowerCase()] = c.status === 'True';
+        });
+      }
+      if (kubeStatus.containerStatuses) {
+        status.containers = {};
+        kubeStatus.containerStatuses.forEach(cs => {
+          status.containers[cs.name] = {
+            ready: cs.ready,
+            restartCount: cs.restartCount,
+            state: cs.state
+          };
+        });
+      }
+      data[user][envType][instanceType][obj.object.metadata.name] = { status };
+    } else {
+      delete data[user][envType][instanceType][obj.object.metadata.name];
+    }
+  } catch (err) {
+    console.log(err);
+    console.log(obj);
+    throw err;
   }
 });
 
@@ -56,7 +85,7 @@ http.createServer(function (req, res) {
     res.writeHead(404);
     res.end();
   }
-}).listen(7788, '127.0.0.1', function () {
+}).listen(7788, '0.0.0.0', function () {
   // eslint-disable-next-line
   console.log('Access SSE stream at http://127.0.0.1:7788/channels/{username}');
 });
