@@ -4,6 +4,7 @@ const PODS_URL = process.env.PODS_URL || 'http://localhost:8001' +
 
 const data = {};
 const channels = {};
+const OLD_ENTITY_CLEANUP_TIMEOUT = 60000;
 const pods$ = require('kube-observable')(PODS_URL);
 pods$.subscribe(obj => {
   // gateway-demo-dev-gateway-696bb497cd-s7b6p
@@ -24,20 +25,31 @@ pods$.subscribe(obj => {
     const kubeStatus = obj.object.status;
     if (obj.type === 'ADDED' || obj.type === 'MODIFIED') {
       const status = {
-        running: kubeStatus.phase === 'Running',
-        stopped: kubeStatus.phase === 'Completed' || kubeStatus.phase === 'Succeeded',
-        failed: kubeStatus.phase === 'Failed'
+        running: true,
+        stopped: false,
+        failed: false
       };
 
       if (kubeStatus.conditions) {
         status.pod = {};
         kubeStatus.conditions.forEach(c => {
-          status.pod[c.type.toLowerCase()] = c.status === 'True';
+          const st = c.status === 'True';
+          status.pod[c.type.toLowerCase()] = st;
+          if (!st) {
+            status.running = false;
+          }
         });
       }
       if (kubeStatus.containerStatuses) {
         status.containers = {};
         kubeStatus.containerStatuses.forEach(cs => {
+          if (cs.state.terminated) {
+            status.stopped = cs.state.terminated.exitCode === 0;
+            status.failed = !status.stopped;
+            setTimeout(function () {
+              delete data[user][envType][instanceType][obj.object.metadata.name];
+            }, OLD_ENTITY_CLEANUP_TIMEOUT);
+          }
           status.containers[cs.name] = {
             ready: cs.ready,
             restartCount: cs.restartCount,
@@ -47,6 +59,7 @@ pods$.subscribe(obj => {
       }
       data[user][envType][instanceType][obj.object.metadata.name] = { status };
     } else {
+      // for some reason may not happen for gateway, rely on MODIFIED
       delete data[user][envType][instanceType][obj.object.metadata.name];
     }
   } catch (err) {
