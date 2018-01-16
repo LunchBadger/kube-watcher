@@ -4,8 +4,10 @@
   "description": "Watch Kube pods and notify clients using SSE",
   "main": "index.js",
   "dependencies": {
+    "debug": "^3.1.0",
     "kube-observable": "^0.1.0",
-    "sse-channel": "^2.0.6"
+    "sse-channel": "^2.0.6",
+    "superagent": "^3.8.2"
   },
   "devDependencies": {
     "eslint": "^3.19.0",
