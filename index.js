@@ -100,7 +100,7 @@ function ensureState (name) {
 
 function computeStatus (kubeStatus) {
   const status = {
-    running: true,
+    running: false,
     stopped: false,
     failed: false
   };
