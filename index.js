@@ -100,7 +100,7 @@ function ensureState (name) {
 
 function computeStatus (kubeStatus) {
   const status = {
-    running: true,
+    running: false,
     stopped: false,
     failed: false
   };
@@ -110,11 +110,11 @@ function computeStatus (kubeStatus) {
     kubeStatus.conditions.forEach(c => {
       const st = c.status === 'True';
       status.pod[c.type.toLowerCase()] = st;
-      if (!st) {
-        status.running = false;
-      }
     });
+
+    status.running = !!status.pod.ready;
   }
+
   if (kubeStatus.containerStatuses) {
     status.containers = {};
     kubeStatus.containerStatuses.forEach(cs => {
