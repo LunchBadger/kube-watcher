@@ -1,0 +1,33 @@
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: kube-watcher-kubectl-proxy
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: kube-watcher-kubectl-proxy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-watcher-kubectl-proxy
+subjects:
+- kind: ServiceAccount
+  name: kube-watcher-kubectl-proxy
+  namespace: default
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-watcher-kubectl-proxy
+  namespace: default

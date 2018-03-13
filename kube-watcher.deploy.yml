@@ -6,8 +6,6 @@ spec:
   replicas: 1
   revisionHistoryLimit: 1
   selector:
-  matchLabels:
-    run: kube-watcher
   strategy:
     type: Recreate
   template:
@@ -48,7 +46,7 @@ metadata:
   name: kube-watcher
 spec:
   rules:
-  - host: kube-watcher.lunchbadger.io
+  - host: kube-watcher.lunchbadger.com
     http:
       paths:
       - backend:

@@ -13,7 +13,11 @@ let data = {};
 pods$.subscribe(obj => {
   // gateway-demo-dev-gateway-696bb497cd-s7b6p
   try {
-    const [instanceType, user, envType] = ensureState(obj.object.metadata.name);
+    const state = ensureState(obj.object.metadata);
+    if (!state) {
+      return;
+    }
+    const {instanceType, user, envType} = state;
     const kubeStatus = obj.object.status;
     if (obj.type === 'ADDED' || obj.type === 'MODIFIED') {
       const status = computeStatus(kubeStatus);
@@ -38,7 +42,7 @@ setInterval(() => {
       data = {};
       const list = res.body;
       for (const pod of list.items) {
-        const [instanceType, user, envType] = ensureState(pod.metadata.name);
+        const {instanceType, user, envType} = ensureState(pod.metadata);
         const status = computeStatus(pod.status);
         data[user][envType][instanceType][pod.metadata.name] = { status };
       }
@@ -81,11 +85,14 @@ http.createServer(function (req, res) {
   console.log('Access SSE stream at http://127.0.0.1:7788/channels/{username}');
 });
 
-function ensureState (name) {
-  const parts = name.split('-');
-  if (parts.length < 4) { return; }
+function ensureState ({ name, labels }) {
+  const user = labels.producer;
+  if (!user) return null;
+  const envType = labels.environment || 'dev';
+  const instanceType = labels.app;
 
-  const [instanceType, user, envType] = parts;
+  if (!instanceType) return null;
+
   data[user] = data[user] || {};
   channels[user] = channels[user] || new SseChannel({
     cors: {
@@ -95,7 +102,7 @@ function ensureState (name) {
   });
   data[user][envType] = data[user][envType] || {};
   data[user][envType][instanceType] = data[user][envType][instanceType] || {};
-  return [instanceType, user, envType];
+  return {instanceType, user, envType};
 }
 
 function computeStatus (kubeStatus) {
