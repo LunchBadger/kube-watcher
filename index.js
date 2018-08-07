@@ -21,7 +21,7 @@ pods$.subscribe(obj => {
     const kubeStatus = obj.object.status;
     if (obj.type === 'ADDED' || obj.type === 'MODIFIED') {
       const status = computeStatus(kubeStatus);
-      data[user][envType][instanceType][obj.object.metadata.name] = { status, id: obj.object.metadata.id || 'lb-id-not-provided' };
+      data[user][envType][instanceType][obj.object.metadata.name] = { status, id: obj.object.metadata.labels.id || 'lb-id-not-provided' };
       debugEvents(obj.type, obj.object.metadata.name, status);
     } else {
       // for some reason may not happen for gateway, rely on MODIFIED
@@ -44,7 +44,7 @@ setInterval(() => {
       for (const pod of list.items) {
         const {instanceType, user, envType} = ensureState(pod.metadata);
         const status = computeStatus(pod.status);
-        data[user][envType][instanceType][pod.metadata.name] = { status, id: pod.metadata.id || 'lb-id-not-provided' };
+        data[user][envType][instanceType][pod.metadata.name] = { status, id: pod.metadata.labels.id || 'lb-id-not-provided' };
       }
       debug('Full reload completed. #of pods', list.items.length);
     })
