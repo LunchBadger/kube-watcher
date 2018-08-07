@@ -44,7 +44,7 @@ setInterval(() => {
       for (const pod of list.items) {
         const {instanceType, user, envType} = ensureState(pod.metadata);
         const status = computeStatus(pod.status);
-        data[user][envType][instanceType][pod.metadata.name] = { status };
+        data[user][envType][instanceType][pod.metadata.name] = { status, id: pod.metadata.id || 'lb-id-not-provided' };
       }
       debug('Full reload completed. #of pods', list.items.length);
     })
