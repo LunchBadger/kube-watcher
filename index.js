@@ -21,7 +21,7 @@ pods$.subscribe(obj => {
     const kubeStatus = obj.object.status;
     if (obj.type === 'ADDED' || obj.type === 'MODIFIED') {
       const status = computeStatus(kubeStatus);
-      data[user][envType][instanceType][obj.object.metadata.name] = { status };
+      data[user][envType][instanceType][obj.object.metadata.name] = { status, id: obj.object.metadata.id || 'lb-id-not-provided' };
       debugEvents(obj.type, obj.object.metadata.name, status);
     } else {
       // for some reason may not happen for gateway, rely on MODIFIED
