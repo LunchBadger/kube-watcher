@@ -59,7 +59,16 @@ setInterval(() => {
   for (const k of Object.keys(data)) {
     const ch = channels[k];
     if (ch) {
-      ch.send({ data: JSON.stringify(data[k]) });
+      const currentState = data[k];
+      for (const envName in currentState) {
+        // ensure that env state has all types present for consistency
+        const env = currentState[envName];
+        env.gateway = env.gateway || {};
+        env.workspace = env.workspace || {};
+        env['sls-api'] = env['sls-api'] || {};
+        env['kubeless-fn'] = env['kubeless-fn'] || {};
+      }
+      ch.send({ data: JSON.stringify(currentState) });
     }
   }
 }, 3000);
