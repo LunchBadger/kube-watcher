@@ -134,17 +134,18 @@ function computeStatus (kubeStatus) {
   if (kubeStatus.containerStatuses) {
     status.containers = {};
     kubeStatus.containerStatuses.forEach(cs => {
-      if (cs.state.terminated) {
-        status.stopped = cs.state.terminated.exitCode === 0;
-        status.failed = !status.stopped;
+      if (cs.lastState && cs.lastState.terminated) {
+        status.stopped = cs.lastState.terminated.exitCode === 0;
+        status.failed = cs.lastState.terminated.exitCode > 0;
       }
       status.containers[cs.name] = {
         ready: cs.ready,
         restartCount: cs.restartCount,
-        state: cs.state
+        state: cs.state,
+        lastState: cs.lastState
       };
     });
   }
-  status.summary = status.running ? 'RUNNING' : (status.stopped ? 'STOPPED' : 'FAILED');
+  status.summary = status.running ? 'RUNNING' : (status.failed ? 'FAILED' : 'STOPPED');
   return status;
 }
