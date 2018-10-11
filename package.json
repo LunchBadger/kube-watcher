@@ -24,7 +24,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "precommit": "lint-staged",
     "lint": "eslint . --fix",
-    "start": "node ."
+    "start": "DEBUG=kube-watcher:* node ."
   },
   "lint-staged": {
     "*.js": [

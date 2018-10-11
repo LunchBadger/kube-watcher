@@ -11,17 +11,29 @@ const channels = {}; // TODO handle remove of user\env
 const pods$ = require('kube-observable')(PODS_URL + '?watch=true');
 const eps$ = require('kube-observable')(ENDPOINTS_URL + '?watch=true');
 
-let data = {};
-const connections = {};
+const data = {};
+let connections = {};
+fullDump();
 
 function rebuildPodState(pod) {
-  const kubeStatus = pod.status;
   const {
     instanceType,
     user,
     envType
   } = ensureState(pod.metadata);
-  const status = computeStatus(kubeStatus);
+  let isRunning = false;
+  const srv = connections[buildServiceNameFromPodName(pod.metadata.name)];
+  debug(buildServiceNameFromPodName(pod.metadata.name), srv);
+
+  // If all good with pod ednpoint will have it listed.
+  // Pod that have not passed readyness check will not be listed
+  if (srv && srv[pod.metadata.name]) {
+    isRunning = true;
+  }
+  const status = {
+    running: isRunning,
+    startTime: pod.status.startTime
+  };
   const id = pod.metadata.labels.id || 'default';
   data[user][envType][instanceType][id] = data[user][envType][instanceType][id] || {
     pods: {}
@@ -29,9 +41,12 @@ function rebuildPodState(pod) {
   data[user][envType][instanceType][id].pods[pod.metadata.name] = {
     status
   };
+
+  const entityStatus = {running: false};
+
+  data[user][envType][instanceType][id].status = entityStatus;
 }
 pods$.subscribe(obj => {
-  // gateway-demo-dev-gateway-696bb497cd-s7b6p
   try {
     const state = ensureState(obj.object.metadata);
     if (!state) {
@@ -62,48 +77,36 @@ eps$.subscribe(obj => {
     return;
   }
 
-  connections[obj.object.metadata.name] = {};
-  if (!obj.object.subsets) {
-    debug('No pods are running for service ', obj.object.metadata.name);
-      // it may be ok (like scaled to zero)
-      // probably, there is some deployemnt issue (orphan service, all pods failed etc.)
-    return;
-  }
-  for (const {addresses} of obj.object.subsets) {
-    if (!addresses) { continue; }
-
-    for (const {targetRef} of addresses) {
-      if (!targetRef || targetRef.kind !== 'Pod') { continue; }
-      connections[obj.object.metadata.name][targetRef.name] = true;
-    }
-  }
+  processEndpoint(obj.object);
 });
 
-setInterval(() => {
-  // complete reset of internal state.
-  // This is becuase watch stream can potentially break and events will be missed
-  request.get(PODS_URL)
-    .then(res => {
-      const newPodsState = {};
-      const list = res.body;
-      for (const pod of list.items) {
-        const {
-          instanceType,
-          user,
-          envType
-        } = ensureState(pod.metadata);
-        const status = computeStatus(pod.status);
-        newPodsState[user][envType][instanceType][pod.metadata.name] = {
-          status,
-          id: pod.metadata.labels.id || null
-        };
-      }
+function processEndpoint(ep) {
+  connections[ep.metadata.name] = {};
+  if (!ep.subsets) {
+    debug('No pods are running for service ', ep.metadata.name);
+    // it may be ok (like scaled to zero)
+    // probably, there is some deployemnt issue (orphan service, all pods failed etc.)
+    return;
+  }
+  for (const {
+      addresses
+    } of ep.subsets) {
+    if (!addresses) {
+      continue;
+    }
 
-      data = newPodsState;
-      debug('Full reload completed. #of pods', list.items.length);
-    })
-    .catch(err => debug(err));
-}, FULL_DUMP_INTERVAL);
+    for (const {
+        targetRef
+      } of addresses) {
+      if (!targetRef || targetRef.kind !== 'Pod') {
+        continue;
+      }
+      connections[ep.metadata.name][targetRef.name] = true;
+    }
+  }
+}
+
+setInterval(fullDump, FULL_DUMP_INTERVAL);
 
 const SseChannel = require('sse-channel');
 const http = require('http');
@@ -123,14 +126,12 @@ setInterval(() => {
       //   env['kubeless-fn'] = env['kubeless-fn'] || {};
       // }
       if (ch.getConnectionCount()) {
-        console.log(ch.getConnectionCount() + ' for ' + k);
-
         ch.send({
           data: JSON.stringify(currentState)
         });
       }
-      if (k === 'sk') {
-        console.log(JSON.stringify(currentState, null, 2));
+      if (k === 'ko6' || k === 'sk') {
+       // console.log(JSON.stringify(currentState, null, 2));
       }
     }
   }
@@ -157,7 +158,9 @@ http.createServer(function (req, res) {
   console.log('Access SSE stream at http://127.0.0.1:7788/channels/{username}');
 });
 
-function ensureState({labels}) {
+function ensureState({
+  labels
+}) {
   const user = labels.producer;
   if (!user) return null;
   const envType = labels.environment || 'dev';
@@ -215,4 +218,47 @@ function computeStatus(kubeStatus) {
   }
   status.summary = status.running ? 'RUNNING' : (status.failed ? 'FAILED' : 'STOPPED');
   return status;
+}
+
+function buildServiceNameFromPodName(podName) {
+  // workspace-rest-dev-74f5dd7db5-fw655
+  // we need workspace-rest-dev
+  return podName.substr(0, podName.lastIndexOf('-', podName.lastIndexOf('-') - 1));
+}
+
+async function fullDump() {
+  // complete reset of internal state.
+  // This is becuase watch stream can potentially break and events will be missed
+  await request.get(PODS_URL)
+    .then(res => {
+      // const newPodsState = {};
+      // const list = res.body;
+      // for (const pod of list.items) {
+      //   const {
+      //     instanceType,
+      //     user,
+      //     envType
+      //   } = ensureState(pod.metadata);
+      //   const status = computeStatus(pod.status);
+      //   newPodsState[user][envType][instanceType][pod.metadata.name] = {
+      //     status,
+      //     id: pod.metadata.labels.id || null
+      //   };
+      // }
+
+      // data = newPodsState;
+      // debug('Full reload completed. #of pods', list.items.length);
+    })
+    .catch(err => debug(err));
+  await request.get(ENDPOINTS_URL)
+    .then(res => {
+      connections = {};
+      const list = res.body;
+      for (const ep of list.items) {
+        processEndpoint(ep);
+      }
+
+      debug('Full reload completed. #of services', list.items.length);
+    })
+    .catch(err => debug(err));
 }
