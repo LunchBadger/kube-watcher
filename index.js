@@ -113,8 +113,10 @@ function resend ({producer, env, environment}) {
 http.createServer(function (req, res) {
   // Note that you can add any client to an SSE channel, regardless of path.
   // Only requirement is not having written data to the response stream yet
+  debug(req.url, req.url.replace(/\/v\d*\//, '').replace('/channels/', '').replace('/channels/', ''))
+
   if (req.url.indexOf('/channels/') >= 0) {
-    const key = req.url.replace('/channels/', '').replace(/\/v\d*\//, '')
+    const key = req.url.replace(/\/v\d*\//, '').replace('/channels/', '').replace('channels/', '')
     channels[key] = channels[key] || new SseChannel({
       cors: {
         origins: ['*'],
