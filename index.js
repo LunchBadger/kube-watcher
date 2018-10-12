@@ -113,7 +113,7 @@ function resend ({producer, env, environment}) {
 http.createServer(function (req, res) {
   // Note that you can add any client to an SSE channel, regardless of path.
   // Only requirement is not having written data to the response stream yet
-  if (req.url.indexOf('/channels/') === 0) {
+  if (req.url.indexOf('/channels/') >= 0) {
     const key = req.url.replace('/channels/', '').replace(/\/v\d*\//, '')
     channels[key] = channels[key] || new SseChannel({
       cors: {
@@ -131,8 +131,8 @@ http.createServer(function (req, res) {
     res.end()
   }
 }).listen(7788, '0.0.0.0', function () {
-  // eslint-disable-next-line
-  console.log('Access SSE stream at http://127.0.0.1:7788/channels/{username}');
+  // eslint-disable-next-line no-console
+  console.log('Access SSE stream at http://127.0.0.1:7788/channels/{username}')
 })
 
 function computeStatus (name, kubeStatus, srvEndpoint) {
@@ -149,8 +149,9 @@ function computeStatus (name, kubeStatus, srvEndpoint) {
     })
   }
 
-  let containers = {};
-  [...kubeStatus.initContainerStatuses || [], ...kubeStatus.containerStatuses || []].forEach(cs => {
+  let containers = {}
+  let podContainers = [...kubeStatus.initContainerStatuses || [], ...kubeStatus.containerStatuses || []]
+  podContainers.forEach(cs => {
     if (cs.lastState && cs.lastState.terminated) {
       status.stopped = cs.lastState.terminated.exitCode === 0
       status.failed = cs.lastState.terminated.exitCode > 0
