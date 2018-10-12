@@ -32,7 +32,8 @@ function buildState (userPods = {}, userConnections = {}) {
         running: isRunning,
         deployment: {
           inProgress: false,
-          latestReady: isRunning
+          latestReady: isRunning,
+          latestFailed: false
         }
       },
       pods: {}
@@ -51,6 +52,7 @@ function buildState (userPods = {}, userConnections = {}) {
         entity.status.deployment.inProgress = true
         let sortedPods = Object.values(entity.pods).sort(p => p.startTime)
         entity.status.deployment.latestReady = sortedPods[0].ready
+        entity.status.deployment.latestFailed = sortedPods[0].failed
       }
     }
   }
