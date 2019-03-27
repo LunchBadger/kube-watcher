@@ -1,6 +1,6 @@
 # kube-watcher
 Watch Kubernetes resources with a resilient RxJS Observable client.
-
+It is used buy UI to render deployemnt process of Functions and Gateways
 
 implemented as https://github.com/LunchBadger/kube-watcher/blob/master/index.js
 
